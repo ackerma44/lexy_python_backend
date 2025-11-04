@@ -1,6 +1,7 @@
 # main.py
 
 from __future__ import annotations
+from fastapi.middleware.cors import CORSMiddleware
 
 # --------------------------------------------------------
 # Force load .env before anything else (fixes uvicorn reload)
@@ -92,6 +93,18 @@ app = FastAPI(title="Tutoring Booking API", version="1.0.0")
 @app.get("/")
 def root():
     return {"message": "Backend is running!"}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://www.thecollegiatetutors.com",  # your live Wix domain
+        "https://editor.wix.com",               # for preview testing
+        "https://*.wixsite.com"                 # sometimes Wix uses this subdomain
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # CORS
 origins_env = os.getenv("FRONTEND_ORIGINS", "*")
