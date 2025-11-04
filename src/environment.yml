@@ -1,0 +1,33 @@
+name: lexy2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  # ASGI stack
+  - fastapi==0.115.0
+  - uvicorn==0.30.6
+  - email-validator==2.2.0
+  - httptools
+  - websockets
+  - watchfiles
+  # Flask stack (present in requirements.txt; keep for parity)
+  - flask==3.0.2
+  - flask-cors==4.0.0
+  # Config & time
+  - python-dotenv==1.0.1
+  - pytz==2024.1
+  # Google APIs
+  - google-api-python-client==2.149.0
+  - google-auth==2.34.0
+  - google-auth-httplib2==0.2.0
+  - google-auth-oauthlib
+  - python-dateutil
+  - pandas
+  - openpyxl
+  - pip:
+    - icecream
+    - black
+    - isort
+

@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LexyCollegiate — Booking API Tester</title>
+    
+    
+    
+ <style>
+/* ---------- Scrollbar ---------- */
+#slotsResults div::-webkit-scrollbar {
+  height: 10px;
+}
+#slotsResults div::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+#slotsResults div::-webkit-scrollbar-thumb {
+  background: #93c5fd;
+  border-radius: 8px;
+}
+#slotsResults div::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* ---------- Base ---------- */
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+html, body {
+  width: 100%;
+  margin: 0;
+  background: #222222;
+  color: #434343;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  overflow-x: auto; /* allow horizontal scroll */
+}
+
+
+/* ---------- Layout ---------- */
+main {
+  display: grid !important;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  width: 100% !important;
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+.card:first-of-type {
+  min-width: 0;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* ---------- Slots Calendar Container ---------- */
+#slotsResults {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  position: relative;
+}
+
+.calendar-scrollbar {
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-bottom: 8px;
+}
+
+.calendar-grid {
+  display: inline-grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  min-width: 1000px; /* forces horizontal scroll */
+}
+
+/* ---------- Cards ---------- */
+.card {
+  background: #282828;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Typography ---------- */
+.section-title {
+  margin: 0 0 8px 0;
+  color: #1d9d95;
+}
+label {
+  font-size: 12px;
+  color: #33F1E4;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ---------- Inputs ---------- */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #4b4b4b;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #6f6f6f;
+  color: rgb(21, 21, 21);
+  box-sizing: border-box;
+}
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* ---------- Buttons ---------- */
+button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #33F1E4;
+  color: #222;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #1d9d95;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Helpers ---------- */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stacked-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Slots ---------- */
+.slot {
+  padding: 10px;
+  border: 1px solid #2e2e2e;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background: #383838;
+  color: rgb(51, 51, 51);
+}
+.slot button {
+  background: #10b981;
+  color: rgb(63, 63, 63);
+}
+
+/* ---------- Misc ---------- */
+.muted {
+  color: #d8d8d8;
+  font-size: 13px;
+}
+.ok {
+  color: #10b981;
+  background: #333;
+  border: 1px solid #a7f3d0;
+  padding: 10px;
+  border-radius: 8px;
+}
+.err {
+  color: #FF5C66;
+  background: #33333300;
+  border: 1px solid #fca5a500;
+  padding: 10px;
+  border-radius: 8px;
+}
+footer {
+  text-align: center;
+  padding: 24px;
+  color: #222222;
+}
+</style>
+
+<main>
+  <section class="card">
+    <h2 class="section-title">Find Available Slots</h2>
+    <p class="muted">Queries <code>GET /api/slots</code>. Click a slot to add its start time to the batch.</p>
+
+    <div class="row" style="margin-top: 10px">
+      <div>
+        <label>Class</label>
+        <select id="classSelect">
+          <option value="">Loading...</option>
+        </select>
+        <!-- Hidden duplicate select for internal syncing -->
+        <select id="classSelect2" style="display:none"></select>
+
+      </div>
+      <div>
+        <label>Tutor</label>
+        <select id="tutorFilter">
+          <option value="">All Tutors</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top: 10px">
+      <label>Duration (hours)</label>
+      <select id="slotsDuration">
+        <option value="1">1</option>
+        <option value="1.5">1.5</option>
+        <option value="2">2</option>
+      </select>
+    </div>
+    <input type="hidden" id="durationHours" value="1" />
+  <div id="slotsResults" class="list" style="margin-top: 12px"></div>
+
+
+    <div style="margin-top: 12px">
+      <button id="btnSearch">Search Slots</button>
+    </div>
+
+    <div id="slotsMsg" style="margin-top: 12px"></div>
+   
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">Create Recurring/Batch Bookings</h2>
+    <p class="muted">Posts to <code>POST /api/booking-request</code> as an array of start times.</p>
+
+    <div class="stacked-inputs">
+      <div>
+        <label>Your Name</label>
+        <input id="name" placeholder="Ada Lovelace" />
+      </div>
+      <div>
+        <label>Your Email</label>
+        <input id="email" type="email" placeholder="ada@example.com" />
+      </div>
+    </div>
+
+    <div style="margin-top: 10px">
+      <label>Until Date (local date)</label>
+      <input type="date" id="untilDate" />
+    </div>
+
+    <div style="margin-top: 12px">
+      <strong>Tutor:</strong>
+      <div id="tutorChoosenSection"></div>
+    </div>
+
+    <div style="margin-top: 12px">
+      <strong>Booking Requests:</strong>
+      <div id="batchList"></div>
+    </div>
+
+    <div style="margin-top: 12px">
+      <label>Notes</label>
+      <textarea id="notes" placeholder="Optional context for the tutor..."></textarea>
+    </div>
+
+    <div style="margin-top: 12px">
+      <button id="btnBook">Create Booking(s)</button>
+    </div>
+
+<div id="bookMsg" style="margin-top: 12px"></div>
+
+<!-- ✅ Add this block back -->
+<pre id="bookJson"
+  style="white-space: pre-wrap;
+         color: #383838;
+         background: #1a1a1a;
+         padding: 10px;
+         border-radius: 8px;
+         margin-top: 12px;
+         font-size: 12px;
+         max-height: 250px;
+         overflow-y: auto;"></pre>
+</section>
+
+
+
+      <!-- POST /api/booking-request -->
+     
+
+      <section class="card full">
+        <h3>Tips</h3>
+        <ul class="muted">
+          <li>
+            Local times are converted to ISO 8601 strings with your timezone
+            offset before sending to the API.
+          </li>
+          <li>
+            Duration dropdowns match backend validation:
+            <strong>1, 1.5, 2</strong>.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>© LexyCollegiate · API Tester</footer>
+
+    <script>
+      // ----- Utilities -----
+      const el = (id) => document.getElementById(id);
+      const htmlEscape = (s) =>
+        s.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      const getBaseUrl = () => "http://127.0.0.1:3000";
+
+       let lastFetchedSlots = [];
+       let tutorFilterSel; // declare globally (not const)
+
+      function toISOWithOffset(datetimeLocalValue) {
+        if (!datetimeLocalValue) return null;
+        const local = new Date(datetimeLocalValue);
+        const pad = (n) => String(n).padStart(2, "0");
+        const yyyy = local.getFullYear();
+        const mm = pad(local.getMonth() + 1);
+        const dd = pad(local.getDate());
+        const hh = pad(local.getHours());
+        const mi = pad(local.getMinutes());
+        const ss = pad(local.getSeconds());
+        const tzMin = local.getTimezoneOffset();
+        const sign = tzMin > 0 ? "-" : "+";
+        const absMin = Math.abs(tzMin);
+        const offH = pad(Math.floor(absMin / 60));
+        const offM = pad(absMin % 60);
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${sign}${offH}:${offM}`;
+      }
+
+      // Formats to the user's local time zone (based on their browser)
+      function formatLocal(iso) {
+        const d = new Date(iso); // parse the UTC/offset time
+        // choose whatever styles you like
+        return new Intl.DateTimeFormat(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short", // e.g., "Oct 3, 9:10 PM"
+        }).format(d);
+      }
+      function getDefaultUntilDate(className = "") {
+  const now = new Date();
+  const year = now.getFullYear();
+  const classLower = className.toLowerCase();
+
+  // 🟦 If it's elementary math, always June 20 (this or next year)
+  if (classLower.includes("elementary") && classLower.includes("math")) {
+    const june = new Date(`${year}-06-20`);
+    const target = now <= june ? june : new Date(`${year + 1}-06-20`);
+    return target.toISOString().split("T")[0];
+  }
+
+  // 🟨 Otherwise, whichever comes sooner: Dec 20 or June 20
+  const june = new Date(`${year}-06-20`);
+  const dec = new Date(`${year}-12-20`);
+  let target;
+  if (now <= june) {
+    target = june;
+  } else if (now <= dec) {
+    target = dec;
+  } else {
+    target = new Date(`${year + 1}-06-20`);
+  }
+  return target.toISOString().split("T")[0];
+}
+
+        function isWithinNext14Days(isoString) {
+  const now = new Date();
+  const end = new Date(now);
+  end.setDate(end.getDate() + 14);
+  const slotDate = new Date(isoString);
+  return slotDate >= now && slotDate <= end;
+}
+
+      // ----- Tutor -----
+      choosenTutor = null;
+      function renderTutor() {
+        const tutor_container = el("tutorChoosenSection");
+        // check if batch is empty and if it is, reset choosenTutor to null
+        if (batch.size === 0) {
+          choosenTutor = null;
+        }
+        tutor_container.innerHTML = "";
+        if (choosenTutor !== null) tutor_container.innerHTML = choosenTutor;
+      }
+
+      // ----- Batch state -----
+      const batch = new Set();
+     function renderBatch() {
+  renderTutor();
+  const container = el("batchList");
+  container.innerHTML = "";
+  if (batch.size === 0) {
+    container.innerHTML =
+      '<span class="muted">No booking requests yet.</span>';
+    return;
+  }
+
+  const className = el("classSelect").value || "(no class)";
+  const duration = el("slotsDuration").value || "?";
+  const tutor = choosenTutor || "(no tutor)";
+
+  // sort chronologically
+  for (const iso of Array.from(batch).sort()) {
+    const d = new Date(iso);
+    const weekday = d.toLocaleDateString(undefined, { weekday: "long" }); // e.g. "Monday"
+    const time = d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "America/New_York", // Convert to ET
+    });
+    const monthDay = d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+    const tag = document.createElement("div");
+    tag.className = "slot";
+    tag.style.background = "#f9fafb";
+
+    tag.innerHTML = `
+      <div>
+        <strong>${weekday}s at ${time} </strong><br>
+        ${htmlEscape(className)} | ${duration} hr${duration !== "1" ? "s" : ""} | ${htmlEscape(tutor)} <br>
+        starting ${monthDay}
+      </div>
+    `;
+
+    const btn = document.createElement("button");
+    btn.textContent = "×";
+    btn.title = "Remove";
+    btn.onclick = () => {
+      batch.delete(iso);
+      renderBatch();
+    };
+    tag.appendChild(btn);
+    container.appendChild(tag);
+  }
+}
+
+
+      function addToBatch(tutor, iso) {
+        if (!tutor) return;
+        if (choosenTutor !== null && tutor !== choosenTutor)
+          console.log("TUTOR IS FUCKED UP!");
+        if (choosenTutor === null) choosenTutor = tutor;
+        if (!iso) return;
+        batch.add(iso);
+        renderBatch();
+      }
+
+      /**
+       * Convert Record<string, [start,end][]> into
+       * [{ group: string, start: string, end: string }, ...]
+       * Set keyName to label the grouping (e.g. "tutor" or "date").
+       */
+      function normalizeSlotsDict(resp, { keyName = "group" } = {}) {
+        if (!resp || typeof resp !== "object" || Array.isArray(resp)) return [];
+        const out = [];
+        for (const [groupKey, pairs] of Object.entries(resp)) {
+          if (!Array.isArray(pairs)) continue;
+          for (const pair of pairs) {
+            if (Array.isArray(pair) && pair.length >= 2) {
+              const [start, end] = pair;
+              out.push({ [keyName]: groupKey, start, end });
+            } else if (
+              pair &&
+              typeof pair === "object" &&
+              "start" in pair &&
+              "end" in pair
+            ) {
+              // just in case the server ever sends objects instead of arrays
+              out.push({
+                [keyName]: groupKey,
+                start: pair.start,
+                end: pair.end,
+              });
+            }
+          }
+        }
+        return out;
+      }
+
+      // ----- GET /api/slots -----
+    async function searchSlots() {
+  console.log("Search Slots triggered!");
+  const base = getBaseUrl();
+  const className = el("classSelect").value.trim();
+  const durationHours = parseFloat(el("slotsDuration").value || "1");
+
+  if (!className)
+    return show("slotsMsg", "Please enter a className.", "err");
+
+  const url = new URL("/api/slots", base);
+  url.searchParams.set("class", className);
+  url.searchParams.set("sessionDurationHours", durationHours);
+
+  show("slotsMsg", "Searching...", "muted");
+  el("slotsResults").innerHTML = "";
+
+  try {
+    const res = await fetch(url.toString(), { method: "GET" });
+    const data = await res.json();
+    console.log("SLOTS API RESPONSE:", data);   // ✅ stays here
+
+    lastFetchedSlots = normalizeSlotsDict(data, { keyName: "tutor" });
+    
+
+
+// populate tutor filter dynamically
+const tutorSet = new Set(lastFetchedSlots.map((s) => s.tutor));
+
+tutorFilterSel.innerHTML = '<option value="">All Tutors</option>';
+for (const t of Array.from(tutorSet).sort()) {
+  const opt = document.createElement("option");
+  opt.value = t;
+  opt.textContent = t;
+  tutorFilterSel.appendChild(opt);
+}
+
+// render once using default filter/sort
+
+renderFilteredSlots();
+
+
+el("tutorFilter").onchange = renderFilteredSlots;
+
+        } catch (err) {
+        show("slotsMsg", "Error loading slots: " + err, "err");
+      }
+    }  // ← closes async function searchSlots()
+
+
+      // ----- POST /api/booking-request -----
+      async function createBooking() {
+        const base = getBaseUrl();
+        const name = el("name").value.trim();
+        const email = el("email").value.trim();
+        const className = el("classSelect2").value.trim();
+        const durationHours = parseFloat(el("durationHours").value || "1");
+        const notes = el("notes").value.trim();
+
+        if (!choosenTutor) {
+          console.log("no booking selected!");
+          return show("bookMsg", "Must select at least one booking.", "err");
+        }
+        const tutor = choosenTutor;
+
+        const untilDateVal = el("untilDate").value;
+        const untilISO = untilDateVal
+          ? new Date(untilDateVal + "T23:59:59").toISOString()
+          : null;
+
+        if (!name || !email)
+          return show("bookMsg", "Please fill in name and email.", "err");
+        if (batch.size === 0)
+          return show(
+            "bookMsg",
+            "Add at least one start time to the batch.",
+            "err",
+          );
+
+        const starts = Array.from(batch).sort();
+        const payload = {
+          name,
+          email,
+          class: className,
+          tutor,
+          sessionDurationHours: durationHours,
+          notes,
+          untilDate: untilISO,
+          startDateTimes: starts,
+        };
+
+        show("bookMsg", "Creating booking(s)...", "muted");
+        const payloadStr = JSON.stringify(payload, null, 2);
+        el("bookJson").textContent = "REQUEST:\n" + payloadStr + "\n\n";
+
+        try {
+          const res = await fetch(
+            new URL("/api/booking-request", base).toString(),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: payloadStr,
+            },
+          );
+          const data = await res.json();
+          el("bookJson").textContent +=
+            "RESPONSE:\n" + JSON.stringify(data, null, 2);
+
+          if (!res.ok)
+            return show(
+              "bookMsg",
+              "Error: " + (data.detail || data.error || res.statusText),
+              "err",
+            );
+
+          const link = data.eventLink
+            ? `<a href="${htmlEscape(data.eventLink)}" target="_blank" rel="noopener">Open calendar event</a>`
+            : "";
+          show("bookMsg", "Booking(s) created! " + link, "ok");
+        } catch (err) {
+          show("bookMsg", "Network error: " + err, "err");
+        }
+      }
+
+      function normalizeClassesResponse(data) {
+        // Supported formats:
+        //  A) ["Algebra I", "Algebra II", ...]
+        //  B) { classes: ["Algebra I", ...] }
+        //  C) [{ id: "alg1", name: "Algebra I" }, ...]
+        //  D) [{ value: "alg1", label: "Algebra I" }, ...]
+        let items = [];
+
+        if (Array.isArray(data)) {
+          items = data.map((x) =>
+            typeof x === "string"
+              ? { value: x, label: x }
+              : {
+                  value: x.id ?? x.value ?? x.name ?? x.label ?? "",
+                  label: x.name ?? x.label ?? x.id ?? x.value ?? "",
+                },
+          );
+        } else if (data && Array.isArray(data.classes)) {
+          items = data.classes.map((x) =>
+            typeof x === "string"
+              ? { value: x, label: x }
+              : {
+                  value: x.id ?? x.value ?? x.name ?? x.label ?? "",
+                  label: x.name ?? x.label ?? x.id ?? x.value ?? "",
+                },
+          );
+        }
+
+        // Filter empties and de-duplicate by value
+        const seen = new Set();
+        return items.filter((it) => {
+          const key = (it.value || "").trim();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      async function fetchClasses() {
+        const base = getBaseUrl();
+        const url = new URL("/api/classes", base); // ← adjust if your route is different
+
+        const sel = document.getElementById("classSelect");
+        const sel2 = document.getElementById("classSelect2");
+        sel.innerHTML = '<option value="">Loading…</option>';
+        sel2.innerHTML = '<option value="">Loading…</option>';
+
+        try {
+          const res = await fetch(url.toString(), { method: "GET" });
+          const data = await res.json();
+
+          if (!res.ok) {
+            sel.innerHTML = '<option value="">Failed to load</option>';
+            show(
+              "bookMsg",
+              "Error loading classes: " +
+                (data.detail || data.error || res.statusText),
+              "err",
+            );
+            return;
+          }
+
+          const items = normalizeClassesResponse(data);
+          if (items.length === 0) {
+            sel.innerHTML = '<option value="">No classes</option>';
+            return;
+          }
+
+          // Populate
+          sel.innerHTML = '<option value="">Select a class…</option>';
+          sel2.innerHTML = '<option value="">Select a class…</option>';
+          for (const it of items) {
+            const opt = document.createElement("option");
+            const opt2 = document.createElement("option");
+            opt.value = it.value;
+            opt.textContent = it.label;
+            opt2.value = it.value;
+            opt2.textContent = it.label;
+            sel.appendChild(opt);
+            sel2.appendChild(opt2);
+          }
+        } catch (err) {
+          sel.innerHTML = '<option value="">Network error</option>';
+          sel2.innerHTML = '<option value="">Network error</option>';
+          show("bookMsg", "Network error loading classes: " + err, "err");
+        }
+      }
+
+      // ----- UI helpers & init -----
+      function show(id, text, cls) {
+        const box = el(id);
+        box.className = cls;
+        box.innerHTML = text;
+      }
+
+      (function init() {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+
+
+        // load classes on page load
+        fetchClasses();
+        const searchSlotBtn = document.getElementById("btnSearch");
+        if (searchSlotBtn) searchSlotBtn.onclick = searchSlots;
+        const createBookingBtn = document.getElementById("btnBook");
+        if (createBookingBtn) createBookingBtn.onclick = createBooking;
+     
+        tutorFilterSel = el("tutorFilter");
+
+        // keep booking side synced with selected search values
+el("classSelect").addEventListener("change", () => {
+  el("classSelect2").value = el("classSelect").value;
+});
+el("slotsDuration").addEventListener("change", () => {
+  el("durationHours").value = el("slotsDuration").value;
+});
+
+      })();
+
+   function renderCalendarView(slots) {
+  const container = el("slotsResults");
+  container.innerHTML = "";
+
+  if (!slots.length) {
+    container.innerHTML = '<span class="muted">No available slots.</span>';
+    return;
+  }
+
+  // Group slots by weekday (Sunday = 0)
+  const grouped = Array.from({ length: 7 }, () => []);
+  for (const { start, tutor } of slots) {
+    const d = new Date(start);
+    const weekday = d.getDay(); // 0=Sun, 6=Sat
+    grouped[weekday].push({ start, tutor });
+  }
+
+  // Create weekday labels
+  const weekdayNames = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays"];
+
+   // Create wrapper with scroll bar on top
+  const scrollWrapper = document.createElement("div");
+  scrollWrapper.className = "calendar-scrollbar";
+
+  const grid = document.createElement("div");
+  grid.className = "calendar-grid";
+
+  weekdayNames.forEach((dayName, i) => {
+    const col = document.createElement("div");
+    col.style.background = "#57be8";
+    col.style.border = "1px solid #e5e7eb";
+    col.style.borderRadius = "10px";
+    col.style.padding = "8px";
+    col.style.minWidth = "150px";
+
+    const header = document.createElement("h4");
+    header.textContent = dayName;
+    header.style.margin = "0 0 6px";
+    header.style.fontSize = "14px";
+    header.style.textAlign = "center";
+    col.appendChild(header);
+
+    const daySlots = grouped[i];
+    if (!daySlots.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "—";
+      empty.style.textAlign = "center";
+      col.appendChild(empty);
+    } else {
+      daySlots.sort((a,b)=>new Date(a.start)-new Date(b.start));
+      daySlots.forEach(({ start, tutor }) => {
+        const time = new Date(start).toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "America/New_York",
+        });
+        const slot = document.createElement("div");
+        slot.style.padding = "4px 0";
+        slot.innerHTML = `
+          <span style="font-weight:600">${time}</span><br>
+          <small>${tutor}</small><br>
+          <button style="margin-top:4px;background:#10b981;color:white;border:none;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;">Request</button>`;
+        slot.querySelector("button").onclick = () => addToBatch(tutor, start);
+        col.appendChild(slot);
+      });
+    }
+    grid.appendChild(col);
+  });
+
+  scrollWrapper.appendChild(grid);
+  container.appendChild(scrollWrapper);
+}
+
+
+       function renderFilteredSlots() {
+  const tutorFilter = el("tutorFilter").value;
+
+  let filteredSlots = lastFetchedSlots;
+        // 🟢 Set default until date on load
+  el("untilDate").value = getDefaultUntilDate();
+
+  // 🔹 Filter by tutor if selected
+  if (tutorFilter) {
+    filteredSlots = filteredSlots.filter((s) => s.tutor === tutorFilter);
+  }
+
+  // 🔹 Only keep slots within the next 14 days
+  filteredSlots = filteredSlots.filter((s) => isWithinNext14Days(s.start));
+
+  // 🔹 Sort by availability if “All Tutors” selected
+  if (!tutorFilter) {
+    filteredSlots.sort((a, b) => new Date(a.start) - new Date(b.start));
+  }
+
+  // 🔹 Render results
+  const frag = document.createDocumentFragment();
+  el("slotsResults").innerHTML = "";
+
+  if (filteredSlots.length === 0) {
+    el("slotsResults").innerHTML =
+      '<span class="muted">No available slots in the next 14 days.</span>';
+    return;
+  }
+
+  renderCalendarView(filteredSlots);
+;
+
+  el("slotsResults").appendChild(frag);
+}
+
+    </script>
+  </body>
+</html>
