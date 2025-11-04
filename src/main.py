@@ -17,7 +17,7 @@ load_dotenv(dotenv_path=project_root / ".env")
 print("✅ Preloaded .env for Uvicorn reload:", os.getenv("GMAIL_USER"))
 # Force override TUTOR_EXCEL_PATH to your Windows path
 import os
-os.environ["TUTOR_EXCEL_PATH"] = "C:\\Users\\lexyg\\OneDrive\\Documents\\COLLEGIATE TUTORS\\Software Stuff\\lexy_python_backend\\tutor_course_list_bk.xlsx"
+os.environ["TUTOR_EXCEL_PATH"] = "tutor_course_list_bk.xlsx"
 print("🔧 Overridden TUTOR_EXCEL_PATH ->", os.environ["TUTOR_EXCEL_PATH"])
 
 
