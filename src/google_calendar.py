@@ -32,33 +32,46 @@ class gCalendar:
             self._g_calendar = self._get_service_account_calendar()
         else:
             self._g_calendar = self._get_calendar_service()
-
     def _get_calendar_service(self):
-        """OAuth user auth with token caching to token.json."""
-        TOKEN_JSON_FILE = "runtime_token.json"
-        TOKEN_JSON = os.path.join(TOKEN_JSON_PATH, TOKEN_JSON_FILE)
-        ic(TOKEN_JSON)
-        keyfile = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
-        if keyfile == "":
-            raise RuntimeError("GOOGLE_APPLICATION_CREDENTIALS is not set")
-        creds = None
-        try:
-            creds = Credentials.from_authorized_user_file(TOKEN_JSON, CALENDAR_SCOPE)
-        except Exception:
-            pass
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                # Must run this locally first to get runtime_token then use that token on the server
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    keyfile, CALENDAR_SCOPE
-                )
+        """Authenticate using environment variables (Render-safe)."""
+        from google.oauth2.credentials import Credentials
 
-                creds = flow.run_local_server(port=8888)
-            with open(TOKEN_JSON, "w+") as f:
-                f.write(creds.to_json())
+        creds = Credentials.from_authorized_user_info({
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+            "refresh_token": os.getenv("GOOGLE_REFRESH_TOKEN"),
+        })
+
         return build("calendar", "v3", credentials=creds)
+
+
+# GREG'S OLD TOKEN LOGIC WHERE YOU HAVE TO LOG IN IN BROWSER THEN IT SAVES TOKEN. NA FOR DEPLOYED VERSION ON RENDER
+    # def _get_calendar_service(self):
+    #     """OAuth user auth with token caching to token.json."""
+    #     TOKEN_JSON_FILE = "runtime_token.json"
+    #     TOKEN_JSON = os.path.join(TOKEN_JSON_PATH, TOKEN_JSON_FILE)
+    #     ic(TOKEN_JSON)
+    #     keyfile = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    #     if keyfile == "":
+    #         raise RuntimeError("GOOGLE_APPLICATION_CREDENTIALS is not set")
+    #     creds = None
+    #     try:
+    #         creds = Credentials.from_authorized_user_file(TOKEN_JSON, CALENDAR_SCOPE)
+    #     except Exception:
+    #         pass
+    #     if not creds or not creds.valid:
+    #         if creds and creds.expired and creds.refresh_token:
+    #             creds.refresh(Request())
+    #         else:
+    #             # Must run this locally first to get runtime_token then use that token on the server
+    #             flow = InstalledAppFlow.from_client_secrets_file(
+    #                 keyfile, CALENDAR_SCOPE
+    #             )
+
+    #             creds = flow.run_local_server(port=8888)
+    #         with open(TOKEN_JSON, "w+") as f:
+    #             f.write(creds.to_json())
+    #     return build("calendar", "v3", credentials=creds)
 
     def _get_service_account_calendar(self, user_email: str = "gbyts3@gmail.com"):
         keyfile = os.getenv("GOOGLE_SERVICE_ACCOUNT_CREDENTIALS")
