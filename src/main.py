@@ -96,11 +96,14 @@ def root():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://www.thecollegiatetutors.com",  # your live Wix domain
-        "https://editor.wix.com",               # for preview testing
-        "https://*.wixsite.com"                 # sometimes Wix uses this subdomain
-    ],
+allow_origins=[
+    "https://thecollegiatetutors.com",
+    "https://thecollegiatetutors.com/booking",
+    "https://thecollegiatetutors.com/auto-booking",
+    "https://editor.wix.com",
+    "https://thecollegiatetutors.wixsite.com"
+]
+,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
